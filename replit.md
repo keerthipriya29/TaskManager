@@ -1,6 +1,6 @@
-# [Project name]
+# QC Task Manager
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+QC Task Manager is a live operations dashboard for scheduling quality-control work, tracking task state, and surfacing reminders when scheduled work is due.
 
 ## Run & Operate
 
@@ -22,15 +22,26 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/qc-task-manager` — React/Vite dashboard at `/`
+- `artifacts/api-server/src/routes/tasks.ts` — task CRUD, dashboard summary, and reminder routes
+- `artifacts/api-server/src/lib/task-scheduler.ts` — background reminder scheduler and seed data
+- `lib/db/src/schema/tasks.ts` — PostgreSQL task table definition
+- `lib/api-spec/openapi.yaml` — source of truth for task API contracts
+- `artifacts/qc-task-manager/src/index.css` — dashboard theme tokens and styling
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Task dates are stored as calendar dates and schedule times as `HH:MM` strings so the scheduled day is not shifted by timestamp serialization.
+- Reminder delivery uses a short-lived in-memory ID queue backed by the database task state; the scheduler runs every 15 seconds and the client polls for reminders.
+- PostgreSQL and Drizzle are used for durable task data in the shared API service; the dashboard consumes generated OpenAPI React Query hooks.
+- Task status is synchronized from schedule time: tasks within 24 hours are `Scheduled`, later work is `Upcoming`, and completed tasks remain `Completed`.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Create, edit, reschedule, complete, snooze, and delete tasks.
+- Review scheduled, upcoming, completed, and total task metrics.
+- Filter and search the work queue.
+- Receive live reminder checks with server health status and quick actions.
 
 ## User preferences
 
@@ -38,7 +49,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run `pnpm --filter @workspace/api-spec run codegen` after changing `lib/api-spec/openapi.yaml`.
+- Restart the managed API and web workflows after backend or frontend code changes.
 
 ## Pointers
 

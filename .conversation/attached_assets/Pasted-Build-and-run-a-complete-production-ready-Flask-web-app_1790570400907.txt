@@ -1,0 +1,55 @@
+Build and run a complete, production-ready Flask web application titled "QC-TaskManagerapp". Ensure the server binds to `0.0.0.0` on port `5000` so it works seamlessly inside the Replit environment.
+
+### 1. Technology Stack
+- **Backend:** Python (Flask), SQLite3 (via SQLAlchemy or native sqlite3), APScheduler (for handling background queue scheduling without requiring external Redis containers).
+- **Frontend:** Jinja2 templates, Bootstrap 5 (CDN), Bootstrap Icons, vanilla JavaScript (Fetch API).
+- **Caching & State:** In-memory Flask cache / dict-based cache for fast schedule lookups.
+
+---
+
+### 2. Core Functional Requirements & Workflows
+
+#### A. Task Management (CRUD)
+- Create task with fields: `id`, `title`, `description` (optional), `schedule_date` (YYYY-MM-DD), `schedule_time` (HH:MM), `status` ('Upcoming', 'Scheduled', 'Completed'), and `created_at`.
+- Ability to view, edit, reschedule (change date/time), and delete tasks dynamically.
+
+#### B. Background Job Queue & In-Memory Cache
+- Integrate **APScheduler** (`BackgroundScheduler`) to check every 10–30 seconds for tasks whose scheduled date/time has arrived.
+- Maintain an active queue/cache of pending reminders to trigger timely notifications.
+- When a task reaches its trigger time, flag it for reminder and update the task state.
+
+#### C. Real-Time Reminders (Pop-Up / Toast)
+- Implement a client-side polling endpoint (e.g., `GET /api/reminders/check`) queried every 5–10 seconds.
+- When an active task's schedule time arrives, trigger a visual **Bootstrap modal or dynamic toast pop-up** on the live UI with sound/alert notifying the user of the scheduled task.
+- Provide quick actions inside the pop-up: "Mark as Completed" or "Dismiss/Snooze".
+
+#### D. Dashboard Views & Metrics
+- Top metrics cards showing real-time counts: **Scheduled Tasks**, **Upcoming Tasks**, and **Completed Tasks**.
+- Filterable task list or multi-column Kanban/table view displaying tasks grouped by status.
+- Live HTTP status indicator badge (e.g., green pulse dot showing "Server Online - 200 OK") that updates live when communicating with backend endpoints.
+
+---
+
+### 3. API & Routes Specification
+- `GET /` — Render the main dashboard.
+- `GET /api/tasks` — Return all tasks filtered by status.
+- `POST /api/tasks` — Create a new task and add to the scheduler queue.
+- `PUT /api/tasks/<id>` — Update/reschedule a task.
+- `DELETE /api/tasks/<id>` — Remove a task and cancel any scheduled job.
+- `POST /api/tasks/<id>/complete` — Mark task status as completed.
+- `GET /api/reminders/check` — Polling route returning triggered task reminders and HTTP status.
+
+---
+
+### 4. UI/UX Details
+- Modern, clean Bootstrap 5 theme with responsive layout (mobile & desktop friendly).
+- Modal forms for creating and editing tasks.
+- Inline feedback alerts for every user action (Task created, updated, rescheduled, or deleted).
+
+---
+
+### 5. Setup & Execution Instructions
+- Initialize the SQLite database automatically on startup if it does not exist (`db.create_all()`).
+- Include a seed script with 2–3 sample tasks (one upcoming, one scheduled soon, one completed).
+- Create a `requirements.txt` containing: `Flask`, `Flask-SQLAlchemy`, `APScheduler`.
+- Configure `main.py` (or `app.py`) to run with `app.run(host='0.0.0.0', port=5000, debug=True)`.

@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: tasks
+    description: Task management operations
+  - name: dashboard
+    description: Dashboard and reminder operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,156 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /tasks:
+    get:
+      operationId: getTasks
+      tags: [tasks]
+      summary: List tasks
+      description: Returns tasks, optionally filtered by status.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Upcoming, Scheduled, Completed]
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /tasks/{id}:
+    put:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update or reschedule a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Task deleted
+        "404":
+          description: Task not found
+  /tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      summary: Mark a task as completed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+  /tasks/{id}/snooze:
+    post:
+      operationId: snoozeTask
+      tags: [tasks]
+      summary: Snooze a reminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SnoozeInput"
+      responses:
+        "200":
+          description: Snoozed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard metrics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /reminders/check:
+    get:
+      operationId: checkReminders
+      tags: [dashboard]
+      summary: Check for triggered reminders
+      responses:
+        "200":
+          description: Triggered reminders and server status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReminderCheck"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +187,118 @@ components:
           type: string
       required:
         - status
+    TaskStatus:
+      type: string
+      enum: [Upcoming, Scheduled, Completed]
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        scheduleDate:
+          type: string
+          format: date
+        scheduleTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        createdAt:
+          type: string
+          format: date-time
+        reminderTriggered:
+          type: boolean
+        snoozedUntil:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - title
+        - description
+        - scheduleDate
+        - scheduleTime
+        - status
+        - createdAt
+        - reminderTriggered
+        - snoozedUntil
+    TaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 1000
+        scheduleDate:
+          type: string
+          format: date
+        scheduleTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+      required:
+        - title
+        - scheduleDate
+        - scheduleTime
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 1000
+        scheduleDate:
+          type: string
+          format: date
+        scheduleTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+      minProperties: 1
+    SnoozeInput:
+      type: object
+      properties:
+        minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          default: 10
+    DashboardSummary:
+      type: object
+      properties:
+        scheduled:
+          type: integer
+        upcoming:
+          type: integer
+        completed:
+          type: integer
+        total:
+          type: integer
+        nextTask:
+          oneOf:
+            - $ref: "#/components/schemas/Task"
+            - type: "null"
+      required: [scheduled, upcoming, completed, total, nextTask]
+    ReminderCheck:
+      type: object
+      properties:
+        reminders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        serverStatus:
+          type: string
+        checkedAt:
+          type: string
+          format: date-time
+      required: [reminders, serverStatus, checkedAt]
 

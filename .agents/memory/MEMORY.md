@@ -1,0 +1,1 @@
+- [Drizzle insert schemas](drizzle-insert-schemas.md) — generated/default columns may already be absent from `createInsertSchema`; only omit keys that exist in the generated shape.
